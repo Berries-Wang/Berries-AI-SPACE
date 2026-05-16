@@ -57,8 +57,58 @@ Agent teams 默认禁用。通过将 CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 环境
 
 
 ## 控制你的 agent team
+### 显示模式
+|模式名称|说明|
+|-|-|
+|- In-process|- 所有队友在你的主终端内运行。使用 Shift+Down 循环浏览队友并输入以直接向他们发送消息。在任何终端中工作，无需额外设置。|
+|-|-|
+|- Split panes|- 每个队友获得自己的窗格。你可以同时看到每个人的输出，并点击窗格直接交互。需要 tmux 或 iTerm2。|
+|-|-|
+
+```json
+{
+  "teammateMode": "in-process"
+}
+```
 
 
+## Agent teams 如何工作
+|Agent teams 启动方式|说明|备注|
+|-|-|-|
+|- 你请求一个团队|- 给 Claude 一个受益于并行工作的任务，并明确要求一个 agent team。Claude 根据你的指示创建一个|-|
+|-|-|-|
+|- Claude 提议一个团队|- 如果 Claude 确定你的任务将受益于并行工作，它可能会建议创建一个团队。你在它继续之前确认。|-|
+|-|-|-|
+
+### 架构
+Agent team 由以下部分组成:
+|组件|	角色|
+|-|-|
+|Team lead	|创建团队、生成队友并协调工作的主 Claude Code 会话|
+|Teammates|	各自处理分配任务的独立 Claude Code 实例|
+|Task list	|队友认领和完成的共享工作项列表|
+|Mailbox	|代理之间通信的消息系统|
+
+系统自动管理任务依赖关系。当队友完成其他任务依赖的任务时，被阻止的任务会自动解除阻止。
+
+团队和任务存储在本地：
+- Team config： `~/.claude/teams/{team-name}/config.json`
+- Task list：`~/.claude/tasks/{team-name}/`
+
+Claude Code 在你创建团队时自动生成这两个，并在队友加入、空闲或离开时更新它们。团队配置保存运行时状态，例如会话 ID 和 tmux 窗格 ID，所以不要手动编辑它或预先编写它：你的更改会在下一次状态更新时被覆盖。
+
+
+### 为队友使用 subagent 定义
+- 可以使用 subagent 来启动“队友”
+
+生成队友时，你可以引用来自任何 subagent 范围 的 subagent 类型：项目、用户、插件或 CLI 定义。这让你定义一个角色一次，例如安全审查员或测试运行器，并将其同时重用为委派的 subagent 和 agent team 队友。
+
+要使用 subagent 定义，在要求 Claude 生成队友时按名称提及它：
+```txt
+Spawn a teammate using the security-reviewer agent type to audit the auth module.
+```
+
+### Context 和通信
 
 
 
